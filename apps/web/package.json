@@ -1,0 +1,53 @@
+{
+  "name": "@app/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The Nuxt UI editor template — a Notion-like WYSIWYG editor with AI completions and image uploads — on Cloudflare Workers, R2 and Workers AI.",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "preview": "wrangler dev",
+    "postinstall": "nuxt prepare",
+    "lint": "eslint .",
+    "typecheck": "nuxt typecheck",
+    "wire:fixture": "node ../../tooling/wire/render.mjs --template wrangler.template.jsonc --out wrangler.jsonc --map wiring.fixture.json --env stage"
+  },
+  "dependencies": {
+    "@ai-sdk/vue": "4.0.153",
+    "@iconify-json/lucide": "1.2.147",
+    "@iconify-json/simple-icons": "1.2.100",
+    "@nuxt/ui": "4.12.0",
+    "@nuxthub/core": "0.10.11",
+    "@tiptap/core": "3.32.0",
+    "@tiptap/extension-collaboration": "3.32.0",
+    "@tiptap/extension-collaboration-caret": "3.32.0",
+    "@tiptap/extension-emoji": "3.32.0",
+    "@tiptap/extension-list": "3.32.0",
+    "@tiptap/extension-table": "3.32.0",
+    "@tiptap/pm": "3.32.0",
+    "@tiptap/vue-3": "3.32.0",
+    "@vueuse/core": "14.4.0",
+    "ai": "7.0.153",
+    "h3": "1.15.11",
+    "nuxt": "4.6.3",
+    "nuxt-csurf": "1.6.6",
+    "scule": "1.3.0",
+    "shiki": "4.5.0",
+    "tailwindcss": "4.3.3",
+    "tiptap-extension-code-block-shiki": "1.2.0",
+    "workers-ai-provider": "4.0.1",
+    "y-partykit": "0.0.33",
+    "yjs": "13.6.33"
+  },
+  "devDependencies": {
+    "@nuxt/eslint": "1.17.0",
+    "@types/node": "24.19.2",
+    "eslint": "10.13.0",
+    "eslint-plugin-better-tailwindcss": "4.10.0",
+    "rolldown": "1.2.15",
+    "typescript": "6.0.3",
+    "vue-tsc": "3.3.13",
+    "wrangler": "4.151.0"
+  }
+}

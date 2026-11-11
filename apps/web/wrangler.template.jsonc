@@ -1,0 +1,43 @@
+// The source of wrangler.jsonc, which tooling/wire renders from it: from
+// wiring.fixture.json for local work (`pnpm run wire:fixture`, committed as
+// that render), and on every Orun lane from the wiring document the
+// `cloudflare-r2` Terraform root lease-publishes (WIRING_CLOUDFLARE_R2_<ENV>)
+// — dev, which no root applies to, from the fixture (component.yaml's
+// buildCommand). Edit this file, never wrangler.jsonc. The workers-assets
+// composition deploys one environment per job with no wrangler `--env`, so
+// `__ENV__` names the environment this is rendered for.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "nuxt-ai-editor-web",
+  // Nitro's cloudflare_module output: the Worker, and the static assets it
+  // serves beside it.
+  "main": "./.output/server/index.mjs",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": "./.output/public",
+    "binding": "ASSETS"
+  },
+  "observability": { "enabled": true },
+  // The images dropped into the editor — an R2 bucket (NuxtHub's
+  // `cloudflare-r2` driver, `hub:blob`) in place of Vercel Blob, served back
+  // at /images/<pathname>.
+  "r2_buckets": [
+    {
+      "binding": "BLOB",
+      "bucket_name": "@@wiring(cloudflare-r2/__ENV__:r2_bucket_name)@@"
+    }
+  ],
+  // The model provider. Workers AI through this binding is the default for
+  // every completion and rewrite (server/utils/models.ts): it needs no key —
+  // the Worker's own account runs the model. Workers AI has no local mode, so
+  // `wrangler dev` and `nuxt dev` reach it remotely (`wrangler login` first).
+  "ai": {
+    "binding": "AI"
+  }
+  // AI_GATEWAY_API_KEY is an optional Worker SECRET, never a var: the
+  // product's Orun secret of that name, which the deploy sets on the Worker
+  // (component.yaml, README). Without it every completion runs on Workers AI.
+  // NUXT_PUBLIC_PARTYKIT_HOST (real-time collaboration) is off: set it as a
+  // Worker variable to turn collaboration on (README → Collaboration).
+}

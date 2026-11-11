@@ -1,0 +1,142 @@
+apiVersion: sourceplane.io/v1
+kind: Component
+metadata:
+  name: web
+  description: The editor (the Nuxt UI editor template on Cloudflare Workers + Static Assets through Nitro's cloudflare_module preset, with R2 and Workers AI, per environment)
+spec:
+  type: cloudflare-workers-assets-turbo
+  lifecycle: production
+  owner: platform
+  # Its pages, attached to it in the workspace's catalog: what the Docs
+  # library shows for it, and what the catalog's docs and runbook checks read.
+  # Generated from what this manifest and its sources declare.
+  docs:
+    overview: docs/overview.md
+    pages:
+      - { path: docs/architecture.md, role: architecture, title: Architecture }
+      - { path: docs/runbook.md, role: runbook, title: Runbook }
+  # `app`, not `web`: a domain and a component share one name space in the
+  # catalog, and a domain called `web` hid this component from it.
+  domain: app
+  path: apps/web
+  # Its own lane per environment: the Nuxt build is the longest job in the
+  # plan, and a shared lane would wait on it.
+  lane: isolated
+  # INFRA BEFORE APP. The Worker binds the R2 bucket by name, rendered into
+  # its config during the build from the wiring document the cloudflare-r2
+  # root lease-publishes after its apply. A job resolves its secrets when it
+  # STARTS, so on a merge to main this deploy waits for it (enforced) — one
+  # convergence runs cloudflare-r2, then web, per environment. A pull request
+  # deploys nothing, so nothing on one waits (advisory).
+  dependsOn:
+    - component: cloudflare-r2
+      mode: enforced
+      modeRules:
+        - mode: advisory
+          when:
+            triggerRef: github-pull-request
+  # WHAT ITS OWNER CONNECTS AFTER THE BUILD, as the product's own Orun secret
+  # on each environment (README → The AI Gateway's model): the AI Gateway's
+  # key. Optional: the editor is built, deployed and completing on Workers AI
+  # without it. It is read by the Worker at request time, so the build runs
+  # without it (`env -u` below) and it reaches the Worker as a secret.
+  optionalSecretEnv:
+    AI_GATEWAY_API_KEY: "secret://nuxt-ai-editor/nuxt-ai-editor/{{ .environment }}/AI_GATEWAY_API_KEY"
+  secretEnv:
+    WIRING_CLOUDFLARE_R2_STAGE: "secret://nuxt-ai-editor/nuxt-ai-editor/stage/WIRING_CLOUDFLARE_R2"
+    WIRING_CLOUDFLARE_R2_PROD: "secret://nuxt-ai-editor/nuxt-ai-editor/prod/WIRING_CLOUDFLARE_R2"
+  subscribe:
+    environments:
+      - name: dev
+        profile: verify
+      - name: stage
+        profile: verify
+        profileRules:
+          - profile: deploy
+            when:
+              triggerRef: github-push-main
+      - name: prod
+        profile: verify
+        profileRules:
+          - profile: deploy
+            when:
+              triggerRef: github-push-main
+  # How the site runs itself for orun.work's live Preview tab
+  # (saas-parallel-baselining PB4): `orun preview` starts this, and a coding
+  # session keeps it running while it works, so the person watches it change
+  # as it is built. The dev server binds the box's loopback only, on a fixed
+  # port, and installs first, so a checkout the session has not installed yet
+  # still comes up.
+  # --strictPort makes nuxt dev exit rather than move to another port when
+  # 3000 is taken. Nuxt answers on the port at once with its loading page,
+  # which reloads itself into the site once the first build is done; the hot
+  # reload socket is Vite's, on the same port (/_nuxt/).
+  # Workers AI has no local mode, so without Cloudflare credentials wrangler's
+  # platform proxy does not start and Nitro's dev emulation runs with no
+  # bindings (no BLOB or AI): the editor renders and edits, but image uploads
+  # and AI completions need a deployment. A 1 GiB heap, as the chat template's
+  # nuxt dev needed.
+  preview:
+    run:
+      - sh
+      - -c
+      - pnpm install --frozen-lockfile --prefer-offline --filter "@app/web..." && exec node_modules/.bin/nuxt dev --host 127.0.0.1 --port 3000 --strictPort
+    port: 3000
+    path: /
+    env:
+      NODE_OPTIONS: --max-old-space-size=1024
+      NUXT_TELEMETRY_DISABLED: "1"
+  parameters:
+    nodeVersion: "22"
+    pnpmVersion: "10.12.1"
+
+    workspaceDir: ../..
+    appDir: .
+
+    turboFilter: "@app/web"
+    wranglerConfig: wrangler.jsonc
+
+    # Nitro's cloudflare_module preset emits the Worker under .output/server
+    # and the static assets under .output/public — both deploy in one
+    # `wrangler deploy`.
+    workerEntrypoint: .output/server/index.mjs
+    assetsDir: .output/public
+
+    # Per-env worker name: nuxt-ai-editor-web-{dev,stage,prod}.
+    workerName: nuxt-ai-editor-web
+    environmentAwareWorkerName: true
+
+    # The account's workers.dev subdomain; exported to the smoke step as
+    # ${WORKERS_DEV_SUBDOMAIN} and used to build ${DEPLOYED_URL}.
+    workersDevSubdomain: your-workers-subdomain
+
+    installCommand: pnpm install --frozen-lockfile
+    # Render this environment's wrangler config, then build. stage and prod
+    # render from the wiring document their cloudflare-r2 apply published
+    # (secretEnv above, resolved before the job's first step); dev, which no
+    # root applies to and which only verifies, renders from the committed
+    # fixture. The committed wrangler.jsonc (the fixture render) is what the
+    # composition's verify-app-structure step finds before this runs. The
+    # build takes no origin: the editor renders no absolute link of its own.
+    # It runs without the optional secret (`env -u`), so no bundle and no
+    # build cache can hold it; then, if the environment has it, it goes to the
+    # Worker as a SECRET (tooling/wire/worker-secrets.mjs: `wrangler secret
+    # bulk`, the value over stdin) before the composition deploys it. Only the
+    # deploy lane holds a Cloudflare credential, so a verify lane builds the
+    # same and pushes nothing. ${ORUN_ENVIRONMENT} the runner sets for every
+    # step.
+    buildCommand: node ../../tooling/wire/live.mjs --template wrangler.template.jsonc --out wrangler.jsonc --components cloudflare-r2 --env "${ORUN_ENVIRONMENT}" --fixture wiring.fixture.json --fixture-envs dev && env -u AI_GATEWAY_API_KEY pnpm exec turbo run build --filter=@app/web && node ../../tooling/wire/worker-secrets.mjs --worker "nuxt-ai-editor-web-${ORUN_ENVIRONMENT}" --config wrangler.jsonc --secret AI_GATEWAY_API_KEY
+
+    # Smoke: the page renders (its Nuxt root and the CSRF token every
+    # completion and upload must carry), and the image route answers a 404
+    # for an image nobody uploaded — which it can only do through the R2
+    # bucket the Worker binds (without the BLOB binding it answers 500).
+    # Read-only: a smoke on every deploy must not write into prod, and no model
+    # is called. Each response is buffered before grep so an early match cannot
+    # SIGPIPE curl.
+    smokeCommand: "html=$(curl -sfL \"${DEPLOYED_URL}/\") && echo \"${html}\" | grep -q 'id=\"__nuxt\"' && echo \"${html}\" | grep -q 'name=\"csrf-token\"' && code=$(curl -s -o /dev/null -w '%{http_code}' \"${DEPLOYED_URL}/images/orun-smoke-missing.png\") && [ \"${code}\" = 404 ]"
+  labels:
+    team: platform
+    layer: delivery
+    surface: web
+    runtime: cloudflare
