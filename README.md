@@ -7,9 +7,10 @@ commands, a drag handle, mentions, emoji and image uploads, plus AI inline
 completions and rewrites — running on **Cloudflare Workers + Static Assets**
 through Nitro's `cloudflare_module` preset, with its AI on **Workers AI**
 through the Worker's own binding and its images in an **R2** bucket
-provisioned by Terraform through [Orun](https://github.com/sourceplane/orun), deployed by
-[Orun](https://github.com/sourceplane/orun) to stage and prod on every merge.
-Packaging it as an Orun baseline is the next milestone (NE2). Workers Free is enough: the Worker is about 2.6 MiB
+provisioned by Terraform through [Orun](https://github.com/sourceplane/orun),
+and packaged as an **Orun baseline**: one command takes a new editor from
+nothing to live on stage and prod, in its own repository, under its own name
+— in ONE landing. Workers Free is enough: the Worker is about 2.6 MiB
 gzipped, under the plan's 3 MiB.
 
 The template's code is the code. NuxtHub keeps its `hub:blob` with
@@ -19,9 +20,48 @@ Workers AI, so a fresh product completes and rewrites text with no model key
 (the template's own AI Gateway model is used once its key is set, as in
 [nuxt-ai-chatbot](https://github.com/sourceplane/nuxt-ai-chatbot)), and every
 icon the editor names is bundled with it. Real-time collaboration stays off,
-as upstream ships it. See
+as upstream ships it. What the baseline adds is everything needed to make a
+copy of it somebody else's, built the way
+[turso-starter](https://github.com/sourceplane/turso-starter) is. See
 [`specs/epics/nuxt-ai-editor`](specs/epics/nuxt-ai-editor/README.md) for the
 design, the milestones and the as-built status.
+
+## Instantiating a product
+
+```bash
+git clone --depth 1 --branch <baseline-tag> https://github.com/sourceplane/nuxt-ai-editor
+cd nuxt-ai-editor
+orun new --blueprint repo-blueprint.yaml --out ~/sites/acme-notes --run-hooks --resume \
+  --set reponame=acme-notes --set productname="Acme Notes" \
+  --set githuborg=acme-inc --set subdomain=<workers-dev-subdomain>
+```
+
+Or, once the platform's registry lists it, from the Orun console (Baselines →
+`nuxt-ai-editor` → Build). Two phases: **`01-product`** creates the
+repository and lands the whole product as ONE pull request — intent, CI,
+tooling, the R2 root, the editor and its tests — and one convergence, per
+environment, applies the bucket, then deploys the editor with its name;
+**`02-docs`** records the live deployment from probed facts.
+**[BOOTSTRAP.md](BOOTSTRAP.md)** is the operator guide;
+[docs/phases/](docs/phases/README.md) has a page per phase.
+
+The new repository receives the **product only** — the app, its R2 root, its
+tests, its CI, its tooling, a README of its own and its operating contract —
+renamed throughout to the product's name, repository, Cloudflare Worker and
+bucket names. None of this repository's machinery ships. **No AI vendor key
+is asked for**: the platform brokers none, and the editor runs on Workers AI.
+
+| What makes it a baseline | Where |
+|---|---|
+| The console card (inputs, secrets, programme) | `blueprint.yaml` |
+| The build document (modules, phases, hooks) | `repo-blueprint.yaml` |
+| This tree's identity, and the bootstrap's task contracts | `.baseline/` |
+| The rename engine | `tooling/rebrand/rebrand.mjs` |
+| The bootstrap's helpers (deferrals, redeploy marker, work-tree strip) | `tooling/bootstrap/` |
+| The deployment-record renderer | `hooks/render-deployment-docs.sh` |
+| The product's README and context pack | `.baseline/product/README.md`, `ai/context/` |
+| The baseline's tests: contract, wiring, leak, offline bootstrap, end to end | `testing/`, `.github/workflows/baseline.yml` |
+| Cutting a `baseline-vN` tag | `.github/workflows/tag.yml` |
 
 ## What is here (the product)
 
@@ -92,3 +132,5 @@ if the two disagree.
 | Workflow | What it runs | Ships to a product |
 |---|---|---|
 | `ci.yml` | the Orun pipeline, and the only workflow a product carries: `orun plan --changed`, then one job per lane. A pull request runs the verify lanes (the editor type-checked, linted, tested, built and dry-deployed per environment, the R2 root planned), except the bootstrap's own landings (`orun/BASE-*`), where `plan` alone is the check; a merge applies the R2 bucket, then deploys stage → prod. It plans nothing while `intent.yaml` names the placeholder workspace `ws_CHANGE_ME`, as this repository does. A manual run (Orunbase's Deploy button, or Run workflow on `main`) plans the environment and components it names under the push-to-main trigger, so they deploy as a merge deploys them | yes |
+| `baseline.yml` | the baseline's own tiers: contract tests, the wiring path, the blueprint read by the pinned orun, the leak gate, the offline bootstrap with the product's own plan, the product built in the job tree, dry-deployed and served — completions answered through a Workers AI stand-in, an image written to R2 and back, the owner's gateway key connected | no |
+| `tag.yml` | cuts a `baseline-vN` tag (manual) | no |

@@ -8,7 +8,7 @@ the baseline that makes a copy of it somebody else's editor in one landing.**
 
 | | |
 |---|---|
-| Status | In progress — NE1 on main: the site runs on Workers |
+| Status | ✅ Shipped (`baseline-v1`) — proven offline in Baseline CI; not yet live (risk NE-A) |
 | Upstream | [nuxt-ui-templates/editor](https://github.com/nuxt-ui-templates/editor) (MIT), `main` at `c7bc6b6` (the repository has no tags) |
 | Reference | [nuxt-ai-chatbot](https://github.com/sourceplane/nuxt-ai-chatbot) — the same template family on Workers: Nitro's preset, NuxtHub's R2 driver, Workers AI by default with the gateway's model on its key, the Workers AI stand-in; [blob-starter](https://github.com/sourceplane/blob-starter) — R2 |
 | Key | `NE` |

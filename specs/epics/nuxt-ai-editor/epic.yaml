@@ -9,7 +9,7 @@ metadata:
 spec:
   title: "Vercel's Nuxt AI-powered Notion-like editor on Cloudflare Workers, R2 and Workers AI"
   summary: "The Nuxt UI editor template — a Notion-like WYSIWYG editor with tables, task lists, code blocks, slash commands, a drag handle, mentions, emoji, image uploads and AI completions and rewrites — run as one Nuxt app on Cloudflare Workers + Static Assets through Nitro's cloudflare_module preset, its AI on Workers AI through the Worker's own binding (the AI Gateway's model once its key is set), its images in R2 through NuxtHub's driver, provisioned by Terraform; and become an Orun baseline that takes a new editor from nothing to live on stage and prod in one landing."
-  state: started
+  state: completed
   milestones:
     - name: "NE0 — the spec"
       exitCriteria:

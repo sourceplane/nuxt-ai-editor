@@ -4,7 +4,7 @@
 |---|---|---|
 | NE0 — the spec | ✅ | NE-1 |
 | NE1 — the editor on Workers and R2 | ✅ | NE-2 |
-| NE2 — a baseline | planned | NE-3 |
+| NE2 — a baseline | ✅ | NE-3, tagged `baseline-v1` |
 
 ## Departures from the upstream template
 
