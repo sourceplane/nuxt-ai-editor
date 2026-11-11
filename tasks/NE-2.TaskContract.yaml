@@ -1,0 +1,20 @@
+apiVersion: orun.io/v1
+kind: TaskContract
+metadata:
+  name: NE-2
+  title: "The editor on Workers and R2"
+spec:
+  goal: The Nuxt UI editor runs on Cloudflare Workers + Static Assets with its AI on Workers AI and its images in R2, its R2 root provisioning stage and prod
+  affects:
+    - apps/web
+    - infra
+    - tests
+    - tooling/wire
+    - pnpm-lock.yaml
+    - pnpm-workspace.yaml
+    - README.md
+    - .gitignore
+  doneWhen:
+    - pnpm typecheck, lint, test and build are green
+    - wrangler dev serves the editor, completions and rewrites are answered through a Workers AI stand-in, and an image is written to R2 and served back
+  gates: []

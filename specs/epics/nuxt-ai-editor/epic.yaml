@@ -1,0 +1,30 @@
+# The epic's declaration. metadata.name equals the directory name; metadata.key
+# is the task-key prefix this epic reserves (NE → NE-1, NE-2, …). Owner, target
+# date and health are the platform's — never written here.
+apiVersion: orun.io/v1
+kind: Epic
+metadata:
+  name: nuxt-ai-editor
+  key: NE
+spec:
+  title: "Vercel's Nuxt AI-powered Notion-like editor on Cloudflare Workers, R2 and Workers AI"
+  summary: "The Nuxt UI editor template — a Notion-like WYSIWYG editor with tables, task lists, code blocks, slash commands, a drag handle, mentions, emoji, image uploads and AI completions and rewrites — run as one Nuxt app on Cloudflare Workers + Static Assets through Nitro's cloudflare_module preset, its AI on Workers AI through the Worker's own binding (the AI Gateway's model once its key is set), its images in R2 through NuxtHub's driver, provisioned by Terraform; and become an Orun baseline that takes a new editor from nothing to live on stage and prod in one landing."
+  state: started
+  milestones:
+    - name: "NE0 — the spec"
+      exitCriteria:
+        - "the repository is born with its intent, CI, tooling and spec index, and this doc set and the task contracts are on main"
+      tasks: [NE-1]
+    - name: "NE1 — the editor on Workers and R2"
+      exitCriteria:
+        - "apps/web is the template with NuxtHub's cloudflare-r2 driver, built by Nitro into one Worker, its AI on Workers AI through the AI binding"
+        - "the R2 root provisions stage and prod, and its wiring reaches the Worker's config"
+        - "`pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` are green"
+        - "`wrangler dev` serves the editor: completions and rewrites answered through a Workers AI stand-in, an image written to R2 and served back"
+      tasks: [NE-2]
+    - name: "NE2 — a baseline"
+      exitCriteria:
+        - "blueprint.yaml (the console card) and repo-blueprint.yaml (the build) take a new editor from nothing to live on stage and prod in one landing, then record it"
+        - "an editor built from it carries the editor only, renamed throughout to its own name, repository, Worker and bucket"
+        - "Baseline CI is green: contract tests, the wiring path, generated component docs, the blueprint read by the pinned orun, the leak gate, the offline bootstrap and the end-to-end tier"
+      tasks: [NE-3]
