@@ -7,6 +7,6 @@ folder is the adoption; the merge creates the epic in the workspace.
 
 | Epic | Cluster | Status | What it is |
 |------|---------|--------|------------|
-| [`nuxt-ai-editor/`](./nuxt-ai-editor/) | **NE** | In progress (NE0) | Vercel's Nuxt AI-powered Notion-like editor — the Nuxt UI editor template — on Cloudflare Workers, R2 and Workers AI, and an Orun baseline that instantiates it (NE2) |
+| [`nuxt-ai-editor/`](./nuxt-ai-editor/) | **NE** | In progress (NE1: the site on Workers) | Vercel's Nuxt AI-powered Notion-like editor — the Nuxt UI editor template — on Cloudflare Workers, R2 and Workers AI, and an Orun baseline that instantiates it (NE2) |
 
 As-built ≠ intent: what shipped lives in each epic's `IMPLEMENTATION-STATUS.md`.

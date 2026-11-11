@@ -1,0 +1,23 @@
+{
+  "extends": "../../tooling/tsconfig/web.json",
+  "compilerOptions": {
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "noEmit": true,
+    "types": [
+      "node"
+    ],
+    "paths": {
+      "#shared/*": [
+        "../../apps/web/shared/*"
+      ],
+      "@/*": [
+        "../../apps/web/*"
+      ]
+    }
+  },
+  "include": [
+    "src/**/*.ts"
+  ]
+}
