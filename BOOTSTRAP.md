@@ -1,0 +1,258 @@
+# BOOTSTRAP — a new product from this baseline, in one landing
+
+How to go from **nothing** to **a Notion-like AI editor live on stage and
+prod, completing text on Workers AI, its R2 buckets applied, documented**,
+with ONE provider consent.
+
+There is one artifact: **`repo-blueprint.yaml`**. It declares what to place,
+in what order, what each phase needs first, and what to say while it runs.
+`orun new` is the whole runtime — the phases below are its `--phase` names,
+not separate workflows. The console card the platform renders is
+**`blueprint.yaml`**; it names the build document and states the inputs, the
+brokered secrets and the programme, and `testing/manifest.test.sh` holds it
+to what the build document does.
+
+Target wall-clock: **about seven minutes** from the build box's boot, summed
+from the phases (6 + 1) — an estimate until a bootstrap measures it:
+turso-starter's measured shape, plus the editor's larger install and Nuxt
+build and the R2 apply. The shape: the task set-up in the background while
+ONE landing is placed, branded and checked in the box (`orun validate` and
+`orun plan`, no runner waited for), then one convergence — per environment
+the R2 bucket applied, then the editor built with its name and deployed,
+stage and prod side by side — then a short docs landing that restores the
+promotion gate.
+
+## 0. What you need
+
+- GitHub org access (repository creation) and a machine with `git`, `node`
+  (≥ 22), `pnpm` (10.12.1), `python3` with PyYAML, `curl`, and the `orun`
+  CLI **≥ v2.88.0** — the floor for RUNNING the bootstrap (the phase overlay,
+  landings that commit per phase, `githubOwner` on the doctor probe, a probe
+  deferred for a project not yet created, `from: workspace`, the deploy
+  credentials minted in one `secrets` reconcile, the task set-up run in the
+  background (`background: true`), and landings checked in the box before
+  they merge (`checks: local`)). The product's own
+  `ci.yml` pins its lanes separately (v2.78.4).
+- A Cloudflare account — Workers Free is enough (the Worker is about 2.6 MiB
+  gzipped, under the plan's 3 MiB). R2 must be enabled, and Workers AI is
+  used through the Worker's own binding on the same account: its usage is
+  the account's. Its **Account API token** needs Workers Scripts Write and
+  R2 Edit (the console's Connect recipe lists the exact permission groups).
+  It is the ONLY provider credential this baseline needs: the platform mints
+  two scoped tokens from it per run — `workers-deploy` for the Worker's
+  deploy, `r2-data` for the bucket's apply (the deploy scope cannot create
+  buckets). Workers AI needs no key; nothing is typed. The AI Gateway's
+  model is the owner's to connect after the build (the product's README).
+- An Orun Cloud workspace for the product — `orunWorkspace`, or the
+  workspace the build runs in (ORUN_WORKSPACE) when that is unset — with an
+  **admin-role API key** for headless runs (secret writes below admin are
+  masked as `not_found`).
+- **The repository allow-listed in the workspace** (console → Settings → Git
+  repos), unless the credential can write links. `01-product`'s `link` step
+  stops and names the fix if it is not.
+
+## 1. One command: `--resume`
+
+The whole bootstrap, unattended. `--resume` places every phase not already
+derived as done, in order, honouring each phase's barrier:
+
+```bash
+git clone --depth 1 --branch <baseline-tag> https://github.com/sourceplane/nuxt-ai-editor
+cd nuxt-ai-editor
+
+orun new --blueprint repo-blueprint.yaml \
+  --out ~/sites/acme-notes --run-hooks --resume \
+  --set reponame=acme-notes --set productname="Acme Notes" \
+  --set githuborg=acme-inc \
+  --set orunWorkspace=ws_XXXXXXXX \
+  --set subdomain=<workers-dev-subdomain>
+```
+
+`subdomain` is the workers.dev subdomain of the Cloudflare account you deploy
+into (Workers & Pages → your subdomain). A build started from the console, or
+with `orun baseline new --from bst_…`, never asks for it: the platform reads
+it from the workspace's Cloudflare connection, the same one the deploy tokens
+mint from. Only a hand-run build like this one passes it.
+
+**`--run-hooks` is the difference between placing files and bootstrapping a
+product.** Without it `orun new` writes the tree and stops: no repository, no
+landing, no convergence watch, no probe. That is deliberate — it is what
+makes the offline bootstrap in `testing/` possible with no workspace and no
+provider.
+
+`--resume` is safe to re-run from anywhere, a fresh container with a fresh
+`--out` included: **phase state is derived from the tree, never stored.** A
+phase whose files are present but branded derives as `drifted`, and
+`--resume` leaves it placed rather than reverting the product's identity.
+
+## 1b. Or phase by phase
+
+| phase | what it lands | verified by |
+|---|---|---|
+| `01-product` | the repository, created and linked; the WHOLE product in one PR — intent, CI, tooling, identity, the R2 root, the site and its tests; the brokered Cloudflare secrets (the deploy token, the R2 token, the account id) | its commit validated and planned in the box (as the PR and as the merge), then merged; the convergence green (R2 applied — which publishes `WIRING_CLOUDFLARE_R2` — then the site built, deployed, smoke-tested); both workers.dev URLs answering |
+| `02-docs` | `ai/context/deployment.md` from probed facts; prod's promotion gate and dev's push lanes restored | the render's own probes, recorded; the commit checked in the box and merged |
+
+```bash
+orun new --blueprint repo-blueprint.yaml --out ~/sites/acme-notes --run-hooks \
+  --phase 01-product --values ~/acme-notes.values.yaml
+# … then 02-docs
+```
+
+`02-docs` reads the identity back from `.rebrand/values.json` in the placed
+tree, but the blueprint's **required** inputs — `reponame`, `productname`,
+`githuborg` — are validated before anything runs, so pass them every time (a
+`--values` file is easier). The domain is not one of them: the site goes live
+on workers.dev, and `productdomain` defaults to empty, which brands the
+reserved placeholder `<reponame>.example.com` into `BASE_DOMAIN` for an owner
+to replace when they attach a domain (README, "Custom domain"). Pass
+`--set productdomain=` only for a site that already has its domain.
+The full guide, one page per phase: [docs/phases/README.md](docs/phases/README.md).
+
+| flag | what it does |
+|---|---|
+| `--status` | derives and prints every phase's state and writes nothing. It parses the document, validates each hook against the action registry and compiles every template; it needs no credential and no network |
+| `--phase <name>` | places exactly that phase; its `requires.phases` still gates |
+| `--until <name>` | places every phase through that one and stops |
+
+What lands in the product is PRODUCT-ONLY: the app, its R2 root, its tests,
+its CI, its tooling, its README and its two context pages. None of this
+repository's machinery (`.baseline/`, the blueprints, `tooling/rebrand`,
+`tooling/bootstrap`, `hooks/`, `testing/`, `docs/phases/`, `specs/`,
+`tasks/`, this file) ships, and no file that ships names one of them. That
+promise is a test: `testing/leak.test.sh` derives what every phase would
+place and gates the set and its sources, and `testing/placement.test.sh`
+gates the same rules over a placed, branded tree.
+
+## 2. Why one landing is safe: the plan carries the order
+
+The bucket must exist before the Worker that binds it: the Worker's
+`wrangler.jsonc` carries the bucket name, rendered in its build from the
+wiring document the R2 root publishes after its apply. That order used to
+need a landing of its own. It does not, because the product's plan holds it,
+per environment:
+
+- `apps/web/component.yaml` declares `dependsOn: cloudflare-r2` with
+  `mode: enforced` and `modeRules` making it advisory on
+  `github-pull-request`. On the merge the Worker's deploy waits for its
+  environment's apply; on a pull request nothing applies or deploys, so
+  nothing waits.
+- A job resolves its secrets when it STARTS, so `WIRING_CLOUDFLARE_R2_<ENV>`
+  is there when the deploy begins.
+- The site resolves the document from the place every later run looks (its
+  `component.yaml` secret refs), so a green convergence already says it is
+  there: a missing one fails its lane. There is no separate check.
+
+`testing/phases.test.sh` fails if a component that reads a wiring document
+does not wait for its publisher this way; `testing/placement.test.sh` plans
+the product's own merge and asserts the two levels: the R2 apply, then the
+deploy.
+
+## 3. Headless / container mode
+
+The blueprint's source is this repository (`sources: [{kind: dir, path: .}]`),
+so the container contract is a shallow clone at a pinned tag plus two
+tokens:
+
+```bash
+export ORUN_TOKEN=…          # orun auth, headless
+export GITHUB_TOKEN=…        # fine-grained PAT (below)
+
+git clone --depth 1 --branch <baseline-tag> https://github.com/sourceplane/nuxt-ai-editor
+cd nuxt-ai-editor
+orun new --blueprint repo-blueprint.yaml \
+  --out /work/acme-notes --run-hooks --resume --progress json \
+  --values /work/acme-notes.values.yaml
+```
+
+| requirement | detail |
+|---|---|
+| `GITHUB_TOKEN` | fine-grained PAT: **read** on this repository; on the PRODUCT's repository **contents write**, **pull-requests write**, **actions read+write** (`orun.run/watch@v1` resumes runs with `gh run rerun`), **checks read**; **repository create** on the owner if `01-product` creates it (or pre-create it — supported) |
+| classic token caveat | a classic PAT or gh OAuth token also needs the `workflow` scope to push `.github/workflows/` |
+| pinning | the clone's `--branch <tag>` pins everything: the blueprint, its modules and its hooks' scripts all come from that one commit |
+
+## 4. After the product is live
+
+- **Change the editor**: `apps/web/app` (the page, the toolbars, the
+  composables), `apps/web/server` (the API), the model in
+  `apps/web/server/utils/models.ts`; its name is
+  `apps/web/shared/utils/site.ts`. Every merge to `main` redeploys.
+- **Connect the AI Gateway**: the product's Orun secret `AI_GATEWAY_API_KEY`
+  on each environment, then a redeploy — the deploy sets it on the Worker
+  (the product's README).
+- **Turn on collaboration**: a PartyKit server and the Worker variable
+  `NUXT_PUBLIC_PARTYKIT_HOST` (the product's README, "Collaboration").
+- **Add a binding** (D1, KV, another bucket): a Terraform root that
+  lease-publishes `WIRING_<ROOT>`, a token in `wrangler.template.jsonc`, its
+  fixture entry, and in `apps/web/component.yaml` the root in the build's
+  `--components`, the `WIRING_<ROOT>_<ENV>` secretEnv and an enforced
+  `dependsOn` on it. `ai/context/operations.md` in the product says the same.
+- **Custom domain**: attach it to the Worker in Cloudflare (the product's
+  README, "Custom domain"). There is no domain phase: attaching a domain
+  needs zone permissions the brokered `workers-deploy` token does not carry.
+  Nothing in the repository changes — the page renders no absolute link to
+  itself.
+- **Refresh the record**: re-run `--phase 02-docs`; it is idempotent.
+
+## 5. Testing this baseline
+
+`.github/workflows/baseline.yml` runs three tiers on every pull request, and
+each runs locally the same way:
+
+```bash
+for t in manifest phases coverage rebrand retouch bootstrap-defer wire render; do bash testing/$t.test.sh; done
+bash testing/leak.test.sh        # needs orun
+bash testing/placement.test.sh   # needs orun >= ci.yml's pin, node, pnpm: the offline bootstrap and the product's own plan
+bash testing/e2e.test.sh         # + network for pnpm: the product built in the job tree, dry-deployed and served
+```
+
+The offline bootstrap (`testing/lib/bootstrap.sh`) places both phases in
+order and finishes each with the blueprint's OWN `run:` hooks — read out of
+`repo-blueprint.yaml`, not transcribed — so the retouch marker, the rebrand,
+the re-tenant, the deferrals and their restore, the lockfile and the
+deployment record all run exactly as a real bootstrap runs them. Only the
+platform's typed actions (task, repo, link, reconcile, land, watch, secrets,
+probe) are stood in for, a landing becoming a commit; the e2e serves the
+built Worker with Workers AI stood in for (it has no local mode). What no
+offline test can do is the platform's half: the bucket applied for real (the
+R2 root is held to `terraform validate`), the tokens minted, the deploy, a
+real model answering, the probes.
+
+## 6. Cutting a baseline tag (maintainers)
+
+Every product built from this repository resolves a `baseline-vN` tag, so
+the tag is cut by a workflow rather than by hand:
+
+```bash
+gh workflow run tag.yml -f version=baseline-v1          # from main
+gh workflow run tag.yml -f version=baseline-v1 -f ref=<sha>
+```
+
+It refuses a version that is not `baseline-v<N>` and a tag that already
+exists: a baseline tag is never moved. Then move the registry row in
+orun-cloud's `infra/baselines-registry/baselines.yaml` by pull request —
+after the tag exists, because the registry's sync fetches `blueprint.yaml`
+at the tag and refuses the whole catalogue if it 404s.
+
+## Troubleshooting
+
+| Symptom | Cause → fix |
+|---|---|
+| `01-product` parks: `waiting for github for <org>` | the workspace's GitHub connection is to another account. Connect the App installation on `<org>` (console → Integrations → GitHub), then `--resume` |
+| `01-product` waits on the `providers` probe, then stops | Cloudflare is not connected. Connect it (console → Integrations), then re-run the phase — the probe is a wait, not a failure |
+| `01-product` stops at `link` | the repository is not linked to the workspace and the credential cannot link it. Allow-list it (console → Settings → Git repos) and re-run the phase |
+| Secret WRITE fails `not_found` while listings work | the API key's role is below admin; re-mint it with the admin role |
+| deploy lane: Authentication error (10000) | the connection's token lacks Workers Scripts write (`workers-deploy`); same fix |
+| a completion fails with an error naming Workers AI | the account cannot run the model (Workers AI not enabled, or its daily free allocation spent): check Workers AI in the Cloudflare dashboard |
+| web lane fails resolving `WIRING_CLOUDFLARE_R2_<ENV>` | that environment's R2 apply failed or published nothing — read its lane; the web lane waits on it. Re-run the phase; its retouch marker re-plans the R2 root |
+| the smoke fails: `/images/…` answers 500, not 404 | the Worker does not bind the bucket (`BLOB`): the rendered `wrangler.jsonc` lost its `r2_buckets` entry — read the build lane |
+| R2 lane: Authentication error (10000), or R2 not enabled | the connection's token cannot mint R2 Edit (`r2-data`), or the account has not enabled R2 (dashboard → R2). Fix it and re-run `01-product` |
+| `land` stops: `the landing's own check failed — orun plan for …` | the product's tree does not plan — the line after it is orun's own error (an unknown component type, a composition that does not resolve). Nothing was pushed. Fix the tree (or the baseline) and re-run the phase |
+| `land` waits on CI after all | the product's repository requires a status check on `main` (branch protection or a ruleset), so GitHub refused the early merge; the landing waits for the check as a `checks: ci` landing would, then merges |
+| Convergence failed AFTER the PR merged; re-running lands nothing | expected on its own — the files are on main. Re-run the phase (`--phase 01-product`, `--redo 01-product`, or the console's Retry): its `retouch` hook gives the landing a diff and the R2 root and the site re-plan |
+| The product's `intent.yaml` says `workspace: ws_SET_ME` | `orunWorkspace` was empty and the build ran outside a workspace; set it and re-run `01-product` |
+| A bootstrap stopped before `02-docs`; prod no longer waits on stage | the gate is deferred, not dropped: run `02-docs`, or `node tooling/bootstrap/promotion.mjs --restore --file <product>/intent.yaml` |
+| `✕ input "productname" is required` | all three required inputs (`reponame`, `productname`, `githuborg`) must be set on every invocation, single-phase ones included |
+| `unknown flag: --phase`, `has no parameter "checks"`, `has no parameter "secrets"` or another parse error in the blueprint | the CLI is below the v2.88.0 floor |
+| web lane `verify-app-structure` fails on `wrangler.jsonc` | the config is not committed. It is the fixture render of `wrangler.template.jsonc`: `pnpm run wire:fixture` and commit it |
+| web lane `build-app`: `wrangler secret bulk failed` | the deploy could not set an owner's secret on the Worker — read the lane; the deploy token (`workers-deploy`) carries Workers Scripts write, which setting a secret needs |
+| the convergence reported green, then `verify` got 404 | a second workflow ran on the push to main and the watch took its run. Only `ci.yml` may run on a push to main |
