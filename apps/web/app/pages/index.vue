@@ -131,7 +131,7 @@ Type \`/\` anywhere to access quick insertion commands for headings, lists, code
 
 ### Image Upload
 
-Custom image upload node powered by [\`UFileUpload\`](https://ui.nuxt.com/docs/components/file-upload) component and [NuxtHub](https://hub.nuxt.com/docs/blob) with [Vercel Blob](https://vercel.com/docs/vercel-blob) support.
+Custom image upload node powered by [\`UFileUpload\`](https://ui.nuxt.com/docs/components/file-upload) component and [NuxtHub](https://hub.nuxt.com/docs/blob) with [Cloudflare R2](https://developers.cloudflare.com/r2/) support.
 
 <div data-type="image-upload"></div>
 
